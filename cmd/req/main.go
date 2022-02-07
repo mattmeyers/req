@@ -36,11 +36,18 @@ func run(argv []string) error {
 				if err != nil {
 					return err
 				}
-				fmt.Println(reqfile.Request.Headers["Content-Type"])
+
 				client := req.NewClient()
-				err = client.Do(reqfile.Request)
+				request, response, err := client.Do(reqfile.Request)
 				if err != nil {
 					return err
+				}
+
+				for _, assertion := range reqfile.Assertions {
+					err = assertion.Assert(request, response)
+					if err != nil {
+						fmt.Println(err)
+					}
 				}
 			}
 

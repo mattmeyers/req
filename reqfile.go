@@ -1,7 +1,13 @@
 package req
 
+import (
+	"fmt"
+	"net/http"
+)
+
 type Reqfile struct {
-	Request Request `yaml:"request"`
+	Request    Request     `yaml:"request"`
+	Assertions []Assertion `yaml:"assertions"`
 }
 
 type Headers map[string]string
@@ -23,6 +29,15 @@ func NewRequest() Request {
 }
 
 type Assertion struct {
-	Name       string
-	Statements []string
+	Name      string `yaml:"name"`
+	Condition string `yaml:"condition"`
+	fn        AssertionFunc
+}
+
+func (a Assertion) Assert(request *http.Request, response *http.Response) error {
+	if !a.fn(request, response) {
+		return fmt.Errorf("%s failed assertion", a.Name)
+	}
+
+	return nil
 }

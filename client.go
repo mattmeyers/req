@@ -3,7 +3,6 @@ package req
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -17,24 +16,17 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) Do(req Request) error {
+func (c *Client) Do(req Request) (*http.Request, *http.Response, error) {
 	url := fmt.Sprintf("http://localhost:8080%s", req.Path)
 	httpReq, err := http.NewRequest(req.Method, url, bytes.NewBufferString(req.Body))
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	res, err := c.client.Do(httpReq)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	resBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("%s\n", resBody)
-
-	return nil
+	return httpReq, res, nil
 }
