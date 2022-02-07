@@ -1,0 +1,13 @@
+request:
+    method: 'GET'
+    path: '/ping'
+
+assertions:
+    - name: Status code
+      condition: res.code == 200
+    - name: Conent-Type Header
+      condition: res.headers.Content-Type == text/plain
+    - name: Content-Length Header
+      condition: res.headers.content-length > 0
+    - name: Body
+      condition: res.body == pong
