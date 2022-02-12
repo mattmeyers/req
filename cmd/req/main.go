@@ -18,12 +18,31 @@ func main() {
 }
 
 func run(argv []string) error {
+	var config *req.Config
+
 	app := &cli.App{
 		Name: "req",
-		Action: func(c *cli.Context) error {
-			files, err := filepath.Glob(c.Args().First())
+		Before: func(c *cli.Context) error {
+			var err error
+			config, err = req.ParseConfig("")
 			if err != nil {
 				return err
+			}
+
+			return nil
+		},
+		Action: func(c *cli.Context) error {
+			argument := c.Args().First()
+			var files []string
+			var err error
+
+			if alias, ok := config.Aliases[argument]; ok {
+				files = append(files, alias)
+			} else {
+				files, err = filepath.Glob(c.Args().First())
+				if err != nil {
+					return err
+				}
 			}
 
 			if len(files) == 0 {
