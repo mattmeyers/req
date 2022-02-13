@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -186,16 +187,28 @@ func (a *App) sendRequests(files []string) error {
 		}
 
 		client := req.NewClient()
-		request, response, err := client.Do(reqfile.Request)
+		_, response, err := client.Do(reqfile.Request)
 		if err != nil {
 			return err
 		}
 
-		for _, assertion := range reqfile.Response.Assertions {
-			err = assertion.Assert(request, response)
-			if err != nil {
-				fmt.Println(err)
+		a.logger.Info("Got response...\n\n")
+		fmt.Fprintf(a.writer, "\t%s %s\n", response.Proto, response.Status)
+		for k := range response.Header {
+			for _, v := range response.Header.Values(k) {
+				fmt.Fprintf(a.writer, "\t%s: %s\n", k, v)
 			}
+		}
+		fmt.Fprint(a.writer, "\n")
+
+		buf, err := io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+
+		if len(buf) > 0 {
+			buf = bytes.ReplaceAll(buf, []byte{'\n'}, []byte{'\n', '\t'})
+			fmt.Fprintf(a.writer, "\t%s\n", buf)
 		}
 	}
 
