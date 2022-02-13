@@ -9,12 +9,14 @@ import (
 	"strings"
 
 	"github.com/mattmeyers/req"
+	"github.com/mattmeyers/req/log"
 	"github.com/urfave/cli/v2"
 )
 
 type App struct {
 	reader *bufio.Reader
 	writer io.Writer
+	logger log.Logger
 
 	args   []string
 	config *req.Config
@@ -22,9 +24,11 @@ type App struct {
 }
 
 func New(args []string) *App {
+	logger, _ := log.NewLevelLogger(log.LevelDebug, os.Stdout)
 	a := &App{
 		reader: bufio.NewReader(os.Stdin),
 		writer: os.Stdout,
+		logger: logger,
 		args:   args,
 	}
 
@@ -56,9 +60,9 @@ func (a *App) Run() error {
 }
 
 func (a *App) handleRepl(c *cli.Context) error {
-	fmt.Print("Welcome to the req REPL\n\n")
+	fmt.Fprint(a.writer, "Welcome to the req REPL\n\n")
 	for {
-		fmt.Print(">> ")
+		fmt.Fprint(a.writer, ">> ")
 
 		text, err := a.reader.ReadString('\n')
 		if err != nil {
@@ -74,19 +78,22 @@ func (a *App) handleRepl(c *cli.Context) error {
 		switch command[0] {
 		case ":send":
 			if len(command) != 2 {
-				fmt.Println("[Error]: alias of glob required")
+				a.logger.Error("alias of glob required")
 				continue
 			}
 
 			files, err := a.getFiles(command[1])
 			if err != nil {
-				fmt.Printf("[Error]: could not retrieve files: %v\n", err)
+				a.logger.Error("could not retrieve files: %v\n", err)
+				continue
+			} else if len(files) == 0 {
+				a.logger.Error("no files specified\n")
 				continue
 			}
 
 			err = a.sendRequests(files)
 			if err != nil {
-				fmt.Printf("[Error]: could not send request(s): %v\n", err)
+				a.logger.Error("could not send request(s): %v\n", err)
 				continue
 			}
 
@@ -104,9 +111,9 @@ func (a *App) handleRepl(c *cli.Context) error {
 
 			for i, file := range files {
 				if alias, ok := aliasLookup[file]; ok {
-					fmt.Printf("%d: %s -> %s\n", i+1, alias, file)
+					fmt.Fprintf(a.writer, "%d: %s -> %s\n", i+1, alias, file)
 				} else {
-					fmt.Printf("%d: %s\n", i+1, file)
+					fmt.Fprintf(a.writer, "%d: %s\n", i+1, file)
 				}
 			}
 		}
@@ -116,12 +123,14 @@ func (a *App) handleRepl(c *cli.Context) error {
 func (a *App) handleSend(c *cli.Context) error {
 	files, err := a.getFiles(c.Args().First())
 	if err != nil {
-		return fmt.Errorf("[Error]: could not retrieve files: %v", err)
+		a.logger.Error("could not retrieve files: %v", err)
+		return nil
 	}
 
 	err = a.sendRequests(files)
 	if err != nil {
-		return fmt.Errorf("[Error]: could not send request(s): %v", err)
+		a.logger.Error("could not send request(s): %v", err)
+		return nil
 	}
 
 	return nil
@@ -145,7 +154,7 @@ func (a *App) getFiles(path string) ([]string, error) {
 
 func (a *App) sendRequests(files []string) error {
 	for _, file := range files {
-		fmt.Printf("Running %s...\n", file)
+		a.logger.Info("Running %s...\n", file)
 		reqfile, err := req.ParseReqfile(file)
 		if err != nil {
 			return err
