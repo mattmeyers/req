@@ -23,6 +23,10 @@ func (c *Client) Do(req Request) (*http.Request, *http.Response, error) {
 		return nil, nil, err
 	}
 
+	for key, value := range req.Headers {
+		httpReq.Header.Set(key, value)
+	}
+
 	res, err := c.client.Do(httpReq)
 	if err != nil {
 		return nil, nil, err

@@ -4,27 +4,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/hashicorp/hcl/v2/hclsimple"
 )
 
 func ParseReqfile(path string) (Reqfile, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return Reqfile{}, err
-	}
-
 	var reqfile Reqfile
-	err = yaml.NewDecoder(f).Decode(&reqfile)
+	err := hclsimple.DecodeFile(path, nil, &reqfile)
 	if err != nil {
 		return Reqfile{}, err
 	}
 
-	for i := range reqfile.Assertions {
-		reqfile.Assertions[i].fn = ParseAssertion(reqfile.Assertions[i].Condition)
+	for i := range reqfile.Response.Assertions {
+		reqfile.Response.Assertions[i].fn = ParseAssertion(reqfile.Response.Assertions[i].Expr)
 	}
 
 	return reqfile, nil

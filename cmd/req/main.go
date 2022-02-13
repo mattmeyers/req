@@ -62,7 +62,7 @@ func run(argv []string) error {
 					return err
 				}
 
-				for _, assertion := range reqfile.Assertions {
+				for _, assertion := range reqfile.Response.Assertions {
 					err = assertion.Assert(request, response)
 					if err != nil {
 						fmt.Println(err)

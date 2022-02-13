@@ -6,32 +6,38 @@ import (
 )
 
 type Reqfile struct {
-	Request    Request     `yaml:"request"`
-	Assertions []Assertion `yaml:"assertions"`
+	Request  Request  `hcl:"request,block"`
+	Response Response `hcl:"response,block"`
 }
 
-type Headers map[string]string
+type Headers struct {
+	Values map[string]string `hcl:",remain"`
+}
 
 type Request struct {
 	HTTPVersion string
-	Method      string `yaml:"method"`
-	Path        string `yaml:"path"`
+	Method      string `hcl:"method"`
+	Path        string `hcl:"path"`
 
-	Headers Headers `yaml:"headers"`
+	Headers map[string]string `hcl:"headers,optional"`
 
-	Body string `yaml:"body"`
+	Body string `hcl:"body,optional"`
 }
 
 func NewRequest() Request {
 	return Request{
-		Headers: make(Headers),
+		// Headers: make(Headers),
 	}
 }
 
+type Response struct {
+	Assertions []Assertion `hcl:"assert,block"`
+}
+
 type Assertion struct {
-	Name      string `yaml:"name"`
-	Condition string `yaml:"condition"`
-	fn        AssertionFunc
+	Name string `hcl:"name,label"`
+	Expr string `hcl:"expr"`
+	fn   AssertionFunc
 }
 
 func (a Assertion) Assert(request *http.Request, response *http.Response) error {
