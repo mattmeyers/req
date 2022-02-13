@@ -1,3 +1,5 @@
+root = './requests/'
+
 [aliases]
-echo = './echo.hcl'
-ping = './ping.hcl'
+echo = './requests/echo.hcl'
+# ping = './requests/ping.hcl'

@@ -72,7 +72,7 @@ func (a *App) handleRepl(c *cli.Context) error {
 
 		command := strings.SplitN(text, " ", 2)
 		switch command[0] {
-		case "send":
+		case ":send":
 			if len(command) != 2 {
 				fmt.Println("[Error]: alias of glob required")
 				continue
@@ -90,11 +90,24 @@ func (a *App) handleRepl(c *cli.Context) error {
 				continue
 			}
 
-		case "aliases":
-			i := 1
-			for alias, file := range a.config.Aliases {
-				fmt.Printf("%d: %s -> %s\n", i, alias, file)
-				i++
+		case ":list":
+			glob := fmt.Sprintf("%s/*.hcl", strings.TrimRight(a.config.Root, "/"))
+			files, err := filepath.Glob(glob)
+			if err != nil {
+				return err
+			}
+
+			aliasLookup := make(map[string]string)
+			for k, v := range a.config.Aliases {
+				aliasLookup[v] = k
+			}
+
+			for i, file := range files {
+				if alias, ok := aliasLookup[file]; ok {
+					fmt.Printf("%d: %s -> %s\n", i+1, alias, file)
+				} else {
+					fmt.Printf("%d: %s\n", i+1, file)
+				}
 			}
 		}
 	}
