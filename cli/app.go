@@ -98,6 +98,9 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 			if err != nil {
 				a.logger.Error(err.Error())
 			}
+
+		case ":quit", ":q", ":exit":
+			return nil
 		}
 	}
 }
