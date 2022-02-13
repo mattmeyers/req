@@ -43,11 +43,15 @@ func New(args []string) *App {
 
 			return nil
 		},
-		Action: a.handleRepl,
+		Action: a.handleReplCommand,
 		Commands: []*cli.Command{
 			{
 				Name:   "send",
-				Action: a.handleSend,
+				Action: a.handleSendCommand,
+			},
+			{
+				Name:   "list",
+				Action: a.handleListCommand,
 			},
 		},
 	}
@@ -59,7 +63,7 @@ func (a *App) Run() error {
 	return a.app.Run(a.args)
 }
 
-func (a *App) handleRepl(c *cli.Context) error {
+func (a *App) handleReplCommand(c *cli.Context) error {
 	fmt.Fprint(a.writer, "Welcome to the req REPL\n\n")
 	for {
 		fmt.Fprint(a.writer, ">> ")
@@ -78,59 +82,80 @@ func (a *App) handleRepl(c *cli.Context) error {
 		switch command[0] {
 		case ":send":
 			if len(command) != 2 {
-				a.logger.Error("alias of glob required")
+				a.logger.Error("alias or glob required")
 				continue
 			}
 
-			files, err := a.getFiles(command[1])
+			err = a.handleSend(command[1])
 			if err != nil {
-				a.logger.Error("could not retrieve files: %v\n", err)
-				continue
-			} else if len(files) == 0 {
-				a.logger.Error("no files specified\n")
-				continue
-			}
-
-			err = a.sendRequests(files)
-			if err != nil {
-				a.logger.Error("could not send request(s): %v\n", err)
+				a.logger.Error(err.Error())
 				continue
 			}
 
 		case ":list":
-			glob := fmt.Sprintf("%s/*.hcl", strings.TrimRight(a.config.Root, "/"))
-			files, err := filepath.Glob(glob)
+			err = a.handleList()
 			if err != nil {
-				return err
-			}
-
-			aliasLookup := make(map[string]string)
-			for k, v := range a.config.Aliases {
-				aliasLookup[v] = k
-			}
-
-			for i, file := range files {
-				if alias, ok := aliasLookup[file]; ok {
-					fmt.Fprintf(a.writer, "%d: %s -> %s\n", i+1, alias, file)
-				} else {
-					fmt.Fprintf(a.writer, "%d: %s\n", i+1, file)
-				}
+				a.logger.Error(err.Error())
 			}
 		}
 	}
 }
 
-func (a *App) handleSend(c *cli.Context) error {
-	files, err := a.getFiles(c.Args().First())
-	if err != nil {
-		a.logger.Error("could not retrieve files: %v", err)
+func (a *App) handleSendCommand(c *cli.Context) error {
+	if c.Args().Len() == 0 {
+		a.logger.Error("alias or glob required")
 		return nil
+	}
+
+	err := a.handleSend(c.Args().First())
+	if err != nil {
+		a.logger.Error(err.Error())
+	}
+
+	return nil
+}
+
+func (a *App) handleListCommand(c *cli.Context) error {
+	err := a.handleList()
+	if err != nil {
+		a.logger.Error(err.Error())
+	}
+
+	return nil
+}
+
+func (a *App) handleSend(glob string) error {
+	files, err := a.getFiles(glob)
+	if err != nil {
+		return fmt.Errorf("could not retrieve files: %v", err)
 	}
 
 	err = a.sendRequests(files)
 	if err != nil {
-		a.logger.Error("could not send request(s): %v", err)
-		return nil
+		return fmt.Errorf("could not send request(s): %v", err)
+	}
+
+	return nil
+}
+
+func (a *App) handleList() error {
+	glob := fmt.Sprintf("%s/*.hcl", strings.TrimRight(a.config.Root, "/"))
+	files, err := filepath.Glob(glob)
+	if err != nil {
+		return err
+	}
+
+	aliasLookup := make(map[string]string)
+	for k, v := range a.config.Aliases {
+		aliasLookup[v] = k
+	}
+
+	for i, file := range files {
+		if alias, ok := aliasLookup[file]; ok {
+			fmt.Fprintf(a.writer, "%d: %s -> %s\n", i+1, alias, file)
+		} else {
+			fmt.Fprintf(a.writer, "%d: %s\n", i+1, file)
+		}
 	}
 
 	return nil
