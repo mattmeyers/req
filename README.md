@@ -7,7 +7,7 @@
 `req` can be directly installed with the following command
 
 ```sh
-go install github.com/mattmeyers/req@latest
+go install github.com/mattmeyers/req/cmd/req@latest
 ```
 
 ## Configuration
