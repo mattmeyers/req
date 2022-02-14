@@ -34,7 +34,8 @@ func New(args []string) *App {
 	}
 
 	a.app = &cli.App{
-		Name: "req",
+		Name:  "req",
+		Usage: "A CLI/REPL HTTP request runner",
 		Before: func(c *cli.Context) error {
 			var err error
 			a.config, err = req.ParseConfig("")
@@ -50,10 +51,12 @@ func New(args []string) *App {
 		Commands: []*cli.Command{
 			{
 				Name:   "send",
+				Usage:  "Send a request by alias or glob",
 				Action: a.handleSendCommand,
 			},
 			{
 				Name:   "list",
+				Usage:  "List all available requests",
 				Action: a.handleListCommand,
 			},
 		},
