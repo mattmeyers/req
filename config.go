@@ -1,6 +1,7 @@
 package req
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -37,4 +38,36 @@ func ParseConfig(path string) (*Config, error) {
 
 func defaultConfig() *Config {
 	return &Config{}
+}
+
+func (c *Config) NewEnv(env string) error {
+	if _, ok := c.Environments[env]; ok {
+		return errors.New("env already exists")
+	}
+
+	c.Environments[env] = make(Env)
+
+	return nil
+}
+
+func (c *Config) SetEnvValue(env, key, value string) error {
+	envMap, ok := c.Environments[env]
+	if !ok {
+		return errors.New("unknown env")
+	}
+
+	envMap[key] = value
+
+	return nil
+}
+
+func (c *Config) DeleteEnvValue(env, key string) error {
+	envMap, ok := c.Environments[env]
+	if !ok {
+		return errors.New("unknown env")
+	}
+
+	delete(envMap, key)
+
+	return nil
 }

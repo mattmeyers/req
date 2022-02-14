@@ -66,7 +66,7 @@ func (a *App) Run() error {
 }
 
 func (a *App) handleReplCommand(c *cli.Context) error {
-	fmt.Fprint(a.writer, "Welcome to the req REPL.\nType :help to see available commands.\n\n")
+	fmt.Fprint(a.writer, "Welcome to the req REPL.\nType help to see available commands.\n\n")
 	for {
 		if a.env != "" {
 			fmt.Fprintf(a.writer, "[%s] >> ", a.env)
@@ -86,7 +86,7 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 
 		command := strings.SplitN(text, " ", 2)
 		switch command[0] {
-		case ":send":
+		case "send":
 			if len(command) != 2 {
 				a.logger.Error("alias or glob required")
 				continue
@@ -98,24 +98,79 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 				continue
 			}
 
-		case ":list":
+		case "list":
 			err = a.handleList()
 			if err != nil {
 				a.logger.Error(err.Error())
 			}
 
-		case ":env":
+		case "env":
+			for k, v := range a.config.Environments[a.env] {
+				fmt.Fprintf(a.writer, "%s = %s\n", k, v)
+			}
+
+		case "env-select":
 			if len(command) != 2 {
 				a.logger.Error("new env required")
 				continue
 			}
 
-			a.env = strings.TrimSpace(command[1])
+			newEnv := strings.TrimSpace(command[1])
+			if _, ok := a.config.Environments[newEnv]; !ok {
+				a.logger.Error("env does not exist (create with env-new)")
+				continue
+			}
 
-		case ":help", ":h":
+			a.env = newEnv
+
+		case "env-new":
+			if len(command) != 2 {
+				a.logger.Error("new env required")
+				continue
+			}
+
+			err = a.config.NewEnv(command[1])
+			if err != nil {
+				a.logger.Error(err.Error())
+				continue
+			}
+
+			a.env = command[1]
+
+		case "env-set":
+			if len(command) != 2 {
+				a.logger.Error("key and value required")
+				continue
+			}
+
+			keyValue := strings.SplitN(command[1], " ", 2)
+			if len(keyValue) != 2 {
+				a.logger.Error("key and value required")
+				continue
+			}
+
+			err = a.config.SetEnvValue(a.env, keyValue[0], keyValue[1])
+			if err != nil {
+				a.logger.Error(err.Error())
+				continue
+			}
+
+		case "env-delete":
+			if len(command) != 2 {
+				a.logger.Error("key required")
+				continue
+			}
+
+			err = a.config.DeleteEnvValue(a.env, command[1])
+			if err != nil {
+				a.logger.Error(err.Error())
+				continue
+			}
+
+		case "help", "h":
 			a.printHelp()
 
-		case ":quit", ":q", ":exit":
+		case "quit", "q", "exit":
 			return nil
 		}
 	}
@@ -236,8 +291,13 @@ func (a *App) sendRequests(files []string) error {
 
 func (a *App) printHelp() {
 	fmt.Fprint(a.writer, "Available commands:\n")
-	fmt.Fprint(a.writer, "  :h, :help           Display this help message.\n")
-	fmt.Fprint(a.writer, "  :send [alias|glob]  Send a request.\n")
-	fmt.Fprint(a.writer, "  :list               List all available requests including aliases.\n")
-	fmt.Fprint(a.writer, "  :q, :quit, :exit    Exit the REPL.\n")
+	fmt.Fprint(a.writer, "  h, help              Display this help message.\n")
+	fmt.Fprint(a.writer, "  list                 List all available requests including aliases.\n")
+	fmt.Fprint(a.writer, "  send {alias|glob}    Send a request.\n")
+	fmt.Fprint(a.writer, "  env                  Display all values in the current env.\n")
+	fmt.Fprint(a.writer, "  env-select {env}     Change the current env.\n")
+	fmt.Fprint(a.writer, "  env-new {env}        Create a new env and switch to it.\n")
+	fmt.Fprint(a.writer, "  env-set {key} {val}  Set a value in the current env.\n")
+	fmt.Fprint(a.writer, "  env-delete {key}     Delete a value from the current env.\n")
+	fmt.Fprint(a.writer, "  q, quit, exit        Exit the REPL.\n")
 }
