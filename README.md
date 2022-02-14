@@ -22,10 +22,33 @@ root = ''
 # below.
 default_env = ''
 
+# A table of request aliases. These values can be used to quickly refer
+# to a specific request. Aliases must be defined with a full path relative
+# to the directory containing the .reqrc file. The root configuration value
+# is not applied to alias paths.
+[aliases]
+
 # A list of environments. An environment is a table of key/value pairs that
 # can be accessed in request templates. For simplicity, all values MUST be
 # strings.
 [environments.<env_name>]
+```
+
+A sample `.reqrc` is as follows.
+
+```toml
+root = './requests/'
+default_env = 'local'
+
+[aliases]
+echo = './requests/echo.hcl'
+ping = './requests/ping.hcl'
+
+[environments.local]
+base_url = 'http://localhost:8080'
+
+[environments.prod]
+base_url = 'http://localhost:9001'
 ```
 
 ## Reqfiles
