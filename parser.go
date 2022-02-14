@@ -13,7 +13,7 @@ import (
 )
 
 func ParseReqfile(path string, env map[string]string) (Reqfile, error) {
-	vars := map[string]cty.Value{}
+	vars := map[string]cty.Value{"env": cty.MapVal(map[string]cty.Value{"": cty.StringVal("")})}
 
 	if len(env) > 0 {
 		envMap := map[string]cty.Value{}

@@ -38,7 +38,10 @@ func ParseConfig(path string) (*Config, error) {
 }
 
 func defaultConfig() *Config {
-	return &Config{}
+	return &Config{
+		Aliases:      map[string]string{},
+		Environments: map[string]Env{},
+	}
 }
 
 func (c *Config) NewEnv(env string) error {
