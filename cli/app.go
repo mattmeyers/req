@@ -10,14 +10,13 @@ import (
 	"strings"
 
 	"github.com/mattmeyers/req"
-	"github.com/mattmeyers/req/log"
 	"github.com/urfave/cli/v2"
 )
 
 type App struct {
 	reader *bufio.Reader
 	writer io.Writer
-	logger log.Logger
+	logger req.Logger
 
 	args   []string
 	config *req.Config
@@ -26,7 +25,7 @@ type App struct {
 }
 
 func New(args []string) *App {
-	logger, _ := log.NewLevelLogger(log.LevelDebug, os.Stdout)
+	logger, _ := req.NewLevelLogger(req.LevelDebug, os.Stdout)
 	a := &App{
 		reader: bufio.NewReader(os.Stdin),
 		writer: os.Stdout,
