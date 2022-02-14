@@ -43,6 +43,8 @@ func New(args []string) *App {
 				return err
 			}
 
+			a.env = a.config.DefaultEnv
+
 			return nil
 		},
 		Action: a.handleReplCommand,

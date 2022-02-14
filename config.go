@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Root         string            `toml:"root"`
+	DefaultEnv   string            `toml:"default_env"`
 	Aliases      map[string]string `toml:"aliases"`
 	Environments map[string]Env    `toml:"environments"`
 }

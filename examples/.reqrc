@@ -1,4 +1,5 @@
 root = './requests/'
+default_env = 'local'
 
 [aliases]
 echo = './requests/echo.hcl'
