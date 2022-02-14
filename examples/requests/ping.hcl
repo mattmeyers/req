@@ -1,6 +1,6 @@
 request {
   method = "GET"
-  path = "/ping"
+  path = "${env.base_url}/ping"
 }
 
 response {

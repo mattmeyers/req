@@ -1,6 +1,6 @@
 request {
     method = "POST"
-    path = "/echo"
+    path = "${env.base_url}/echo"
     headers = {
         Content-Type = "application/json"
     }

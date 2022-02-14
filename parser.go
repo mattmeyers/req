@@ -7,12 +7,29 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsimple"
+	"github.com/zclconf/go-cty/cty"
 )
 
-func ParseReqfile(path string) (Reqfile, error) {
+func ParseReqfile(path string, env map[string]string) (Reqfile, error) {
+	vars := map[string]cty.Value{}
+
+	if len(env) > 0 {
+		envMap := map[string]cty.Value{}
+		for k, v := range env {
+			envMap[k] = cty.StringVal(v)
+		}
+
+		vars["env"] = cty.MapVal(envMap)
+	}
+
 	var reqfile Reqfile
-	err := hclsimple.DecodeFile(path, nil, &reqfile)
+	err := hclsimple.DecodeFile(
+		path,
+		&hcl.EvalContext{Variables: vars},
+		&reqfile,
+	)
 	if err != nil {
 		return Reqfile{}, err
 	}

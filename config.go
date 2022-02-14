@@ -8,9 +8,12 @@ import (
 )
 
 type Config struct {
-	Root    string            `toml:"root"`
-	Aliases map[string]string `toml:"aliases"`
+	Root         string            `toml:"root"`
+	Aliases      map[string]string `toml:"aliases"`
+	Environments map[string]Env    `toml:"environments"`
 }
+
+type Env map[string]string
 
 func ParseConfig(path string) (*Config, error) {
 	if path == "" {

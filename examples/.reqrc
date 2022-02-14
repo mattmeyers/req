@@ -3,3 +3,9 @@ root = './requests/'
 [aliases]
 echo = './requests/echo.hcl'
 # ping = './requests/ping.hcl'
+
+[environments.local]
+base_url = "http://localhost:8080"
+
+[environments.prod]
+base_url = "http://localhost:9001"

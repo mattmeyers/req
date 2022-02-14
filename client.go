@@ -2,7 +2,6 @@ package req
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 )
 
@@ -17,8 +16,7 @@ func NewClient() *Client {
 }
 
 func (c *Client) Do(req Request) (*http.Request, *http.Response, error) {
-	url := fmt.Sprintf("http://localhost:8080%s", req.Path)
-	httpReq, err := http.NewRequest(req.Method, url, bytes.NewBufferString(req.Body))
+	httpReq, err := http.NewRequest(req.Method, req.Path, bytes.NewBufferString(req.Body))
 	if err != nil {
 		return nil, nil, err
 	}

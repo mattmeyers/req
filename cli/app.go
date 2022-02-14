@@ -21,6 +21,7 @@ type App struct {
 
 	args   []string
 	config *req.Config
+	env    string
 	app    *cli.App
 }
 
@@ -67,7 +68,11 @@ func (a *App) Run() error {
 func (a *App) handleReplCommand(c *cli.Context) error {
 	fmt.Fprint(a.writer, "Welcome to the req REPL\n\n")
 	for {
-		fmt.Fprint(a.writer, ">> ")
+		if a.env != "" {
+			fmt.Fprintf(a.writer, "[%s] >> ", a.env)
+		} else {
+			fmt.Fprint(a.writer, ">> ")
+		}
 
 		text, err := a.reader.ReadString('\n')
 		if err != nil {
@@ -98,6 +103,14 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 			if err != nil {
 				a.logger.Error(err.Error())
 			}
+
+		case ":env":
+			if len(command) != 2 {
+				a.logger.Error("new env required")
+				continue
+			}
+
+			a.env = strings.TrimSpace(command[1])
 
 		case ":quit", ":q", ":exit":
 			return nil
@@ -184,7 +197,7 @@ func (a *App) getFiles(path string) ([]string, error) {
 func (a *App) sendRequests(files []string) error {
 	for _, file := range files {
 		a.logger.Info("Running %s...\n", file)
-		reqfile, err := req.ParseReqfile(file)
+		reqfile, err := req.ParseReqfile(file, a.config.Environments[a.env])
 		if err != nil {
 			return err
 		}
