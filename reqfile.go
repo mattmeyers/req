@@ -17,7 +17,7 @@ type Headers struct {
 type Request struct {
 	HTTPVersion string
 	Method      string `hcl:"method"`
-	Path        string `hcl:"path"`
+	URL         string `hcl:"url"`
 
 	Headers map[string]string `hcl:"headers,optional"`
 
