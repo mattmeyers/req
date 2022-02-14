@@ -66,7 +66,7 @@ func (a *App) Run() error {
 }
 
 func (a *App) handleReplCommand(c *cli.Context) error {
-	fmt.Fprint(a.writer, "Welcome to the req REPL\n\n")
+	fmt.Fprint(a.writer, "Welcome to the req REPL.\nType :help to see available commands.\n\n")
 	for {
 		if a.env != "" {
 			fmt.Fprintf(a.writer, "[%s] >> ", a.env)
@@ -111,6 +111,9 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 			}
 
 			a.env = strings.TrimSpace(command[1])
+
+		case ":help", ":h":
+			a.printHelp()
 
 		case ":quit", ":q", ":exit":
 			return nil
@@ -229,4 +232,12 @@ func (a *App) sendRequests(files []string) error {
 	}
 
 	return nil
+}
+
+func (a *App) printHelp() {
+	fmt.Fprint(a.writer, "Available commands:\n")
+	fmt.Fprint(a.writer, "  :h, :help           Display this help message.\n")
+	fmt.Fprint(a.writer, "  :send [alias|glob]  Send a request.\n")
+	fmt.Fprint(a.writer, "  :list               List all available requests including aliases.\n")
+	fmt.Fprint(a.writer, "  :q, :quit, :exit    Exit the REPL.\n")
 }
