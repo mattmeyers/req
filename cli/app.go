@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,20 +83,16 @@ func (a *App) Run() error {
 
 func (a *App) handleReplCommand(c *cli.Context) error {
 	fmt.Fprint(a.writer, "Welcome to the req REPL.\nType help to see available commands.\n\n")
-	for {
-		if a.env != "" {
-			fmt.Fprintf(a.writer, "[%s] >> ", a.env)
-		} else {
-			fmt.Fprint(a.writer, ">> ")
-		}
+	prompt := ">>"
+	if a.env != "" {
+		prompt = fmt.Sprintf("[%s] >>", a.env)
+	}
 
-		text, err := a.reader.ReadString('\n')
+	for {
+		text, err := a.getInput(prompt)
 		if err != nil {
 			return err
-		}
-
-		text = strings.Trim(text, " \n")
-		if text == "" {
+		} else if text == "" {
 			continue
 		}
 
@@ -117,6 +114,13 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 			err = a.handleList()
 			if err != nil {
 				a.logger.Error(err.Error())
+			}
+
+		case "new":
+			err = a.handleNew()
+			if err != nil {
+				a.logger.Error(err.Error())
+				continue
 			}
 
 		case "env":
@@ -251,6 +255,42 @@ func (a *App) handleList() error {
 	return nil
 }
 
+func (a *App) handleNew() error {
+	method, err := a.getInput("Method:")
+	if err != nil {
+		return err
+	}
+
+	url, err := a.getInput("URL:")
+	if err != nil {
+		return err
+	}
+
+	client := req.NewClient()
+	_, res, err := client.Do(req.Request{Method: method, URL: url})
+	if err != nil {
+		return err
+	}
+
+	err = a.printResponse(res)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) getInput(prompt string) (string, error) {
+	fmt.Fprintf(a.writer, "%s ", prompt)
+
+	text, err := a.reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Trim(text, " \n"), nil
+}
+
 func (a *App) getFiles(path string) ([]string, error) {
 	var files []string
 	var err error
@@ -281,24 +321,33 @@ func (a *App) sendRequests(files []string) error {
 			return err
 		}
 
-		a.logger.Info("Got response...\n\n")
-		fmt.Fprintf(a.writer, "\t%s %s\n", response.Proto, response.Status)
-		for k := range response.Header {
-			for _, v := range response.Header.Values(k) {
-				fmt.Fprintf(a.writer, "\t%s: %s\n", k, v)
-			}
-		}
-		fmt.Fprint(a.writer, "\n")
-
-		buf, err := io.ReadAll(response.Body)
+		err = a.printResponse(response)
 		if err != nil {
 			return err
 		}
+	}
 
-		if len(buf) > 0 {
-			buf = bytes.ReplaceAll(buf, []byte{'\n'}, []byte{'\n', '\t'})
-			fmt.Fprintf(a.writer, "\t%s\n", buf)
+	return nil
+}
+
+func (a *App) printResponse(response *http.Response) error {
+	a.logger.Info("Got response...\n\n")
+	fmt.Fprintf(a.writer, "\t%s %s\n", response.Proto, response.Status)
+	for k := range response.Header {
+		for _, v := range response.Header.Values(k) {
+			fmt.Fprintf(a.writer, "\t%s: %s\n", k, v)
 		}
+	}
+	fmt.Fprint(a.writer, "\n")
+
+	buf, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	if len(buf) > 0 {
+		buf = bytes.ReplaceAll(buf, []byte{'\n'}, []byte{'\n', '\t'})
+		fmt.Fprintf(a.writer, "\t%s\n", buf)
 	}
 
 	return nil
