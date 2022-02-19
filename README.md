@@ -115,7 +115,8 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --help, -h  show help (default: false)
+   --config value, -c value  Point to a reqrc config file (default: "./.reqrc")
+   --help, -h                show help (default: false)
 ```
 
 ### REPL Usage
@@ -133,6 +134,7 @@ Available commands:
   h, help              Display this help message.
   list                 List all available requests including aliases.
   send {alias|glob}    Send a request.
+  new                                    Interactively define a new request.
   env                  Display all values in the current env.
   env-select {env}     Change the current env.
   env-new {env}        Create a new env and switch to it.

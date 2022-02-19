@@ -358,6 +358,7 @@ func (a *App) printHelp() {
 	fmt.Fprint(a.writer, "  h, help              Display this help message.\n")
 	fmt.Fprint(a.writer, "  list                 List all available requests including aliases.\n")
 	fmt.Fprint(a.writer, "  send {alias|glob}    Send a request.\n")
+	fmt.Fprint(a.writer, "  new    				 Interactively define a new request.\n")
 	fmt.Fprint(a.writer, "  env                  Display all values in the current env.\n")
 	fmt.Fprint(a.writer, "  env-select {env}     Change the current env.\n")
 	fmt.Fprint(a.writer, "  env-new {env}        Create a new env and switch to it.\n")
