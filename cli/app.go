@@ -36,9 +36,20 @@ func New(args []string) *App {
 	a.app = &cli.App{
 		Name:  "req",
 		Usage: "A CLI/REPL HTTP request runner",
+		Flags: []cli.Flag{
+			&cli.PathFlag{
+				Name:      "config",
+				Aliases:   []string{"c"},
+				Usage:     "Point to a reqrc config file",
+				Value:     "./.reqrc",
+				TakesFile: true,
+			},
+		},
 		Before: func(c *cli.Context) error {
+			reqrcPath := c.Path("config")
+
 			var err error
-			a.config, err = req.ParseConfig("")
+			a.config, err = req.ParseConfig(reqrcPath)
 			if err != nil {
 				return err
 			}
