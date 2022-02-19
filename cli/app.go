@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -62,8 +63,26 @@ func New(args []string) *App {
 		Action: a.handleReplCommand,
 		Commands: []*cli.Command{
 			{
-				Name:   "send",
-				Usage:  "Send a request by alias or glob",
+				Name:  "send",
+				Usage: "Send a request by alias or glob",
+				Before: func(c *cli.Context) error {
+					if env := c.String("env"); env != "" {
+						if _, ok := a.config.Environments[env]; !ok {
+							return errors.New("unknown env")
+						}
+
+						a.env = env
+					}
+
+					return nil
+				},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "env",
+						Aliases: []string{"e"},
+						Usage:   "Select the env to use",
+					},
+				},
 				Action: a.handleSendCommand,
 			},
 			{
