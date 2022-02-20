@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -27,11 +26,9 @@ type App struct {
 }
 
 func New(args []string) *App {
-	logger, _ := req.NewLevelLogger(req.LevelDebug, os.Stdout)
 	a := &App{
 		reader: bufio.NewReader(os.Stdin),
 		writer: os.Stdout,
-		logger: logger,
 		args:   args,
 	}
 
@@ -46,17 +43,39 @@ func New(args []string) *App {
 				Value:     "./.reqrc",
 				TakesFile: true,
 			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "Log additional information",
+			},
+			&cli.BoolFlag{
+				Name:    "very-verbose",
+				Aliases: []string{"vv"},
+				Usage:   "Log debug information information",
+			},
 		},
 		Before: func(c *cli.Context) error {
-			reqrcPath := c.Path("config")
-
 			var err error
+
+			reqrcPath := c.Path("config")
 			a.config, err = req.ParseConfig(reqrcPath)
 			if err != nil {
 				return err
 			}
 
 			a.env = a.config.DefaultEnv
+
+			level := req.LevelWarn
+			if c.Bool("verbose") {
+				level = req.LevelInfo
+			} else if c.Bool("very-verbose") {
+				level = req.LevelDebug
+			}
+
+			a.logger, err = req.NewLevelLogger(level, os.Stdout)
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},
@@ -215,6 +234,7 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 }
 
 func (a *App) handleSendCommand(c *cli.Context) error {
+	a.logger.Debug("RUNNING DEBUG")
 	if c.Args().Len() == 0 {
 		a.logger.Error("alias or glob required")
 		return nil
@@ -351,10 +371,10 @@ func (a *App) sendRequests(files []string) error {
 
 func (a *App) printResponse(response *http.Response) error {
 	a.logger.Info("Got response...\n\n")
-	fmt.Fprintf(a.writer, "\t%s %s\n", response.Proto, response.Status)
+	fmt.Fprintf(a.writer, "%s %s\n", response.Proto, response.Status)
 	for k := range response.Header {
 		for _, v := range response.Header.Values(k) {
-			fmt.Fprintf(a.writer, "\t%s: %s\n", k, v)
+			fmt.Fprintf(a.writer, "%s: %s\n", k, v)
 		}
 	}
 	fmt.Fprint(a.writer, "\n")
@@ -365,8 +385,7 @@ func (a *App) printResponse(response *http.Response) error {
 	}
 
 	if len(buf) > 0 {
-		buf = bytes.ReplaceAll(buf, []byte{'\n'}, []byte{'\n', '\t'})
-		fmt.Fprintf(a.writer, "\t%s\n", buf)
+		fmt.Fprintf(a.writer, "%s\n", buf)
 	}
 
 	return nil
