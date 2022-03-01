@@ -19,6 +19,7 @@ require (
 	github.com/BurntSushi/toml v1.0.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d // indirect
 	github.com/hashicorp/hcl/v2 v2.11.1
+	github.com/mattmeyers/repl v0.0.0-20220301002821-bcf425ce8b5e
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 )

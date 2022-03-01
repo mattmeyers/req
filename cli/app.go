@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mattmeyers/repl"
 	"github.com/mattmeyers/req"
 	"github.com/urfave/cli/v2"
 )
@@ -120,121 +121,170 @@ func (a *App) Run() error {
 }
 
 func (a *App) handleReplCommand(c *cli.Context) error {
-	fmt.Fprint(a.writer, "Welcome to the req REPL.\nType help to see available commands.\n\n")
-	prompt := ">>"
-	if a.env != "" {
-		prompt = fmt.Sprintf("[%s] >>", a.env)
-	}
+	r := repl.New().
+		WithPrompt(a.prompt).
+		WithPreRunHook(func(c *repl.Context) (string, error) {
+			return "Welcome to the req REPL.\nType help to see available commands.\n\n", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if !strings.HasPrefix(c.Input, "send") {
+				return "", repl.ErrNoMatch
+			}
 
-	for {
-		text, err := a.getInput(prompt)
-		if err != nil {
-			return err
-		} else if text == "" {
-			continue
-		}
-
-		command := strings.SplitN(text, " ", 2)
-		switch command[0] {
-		case "send":
+			command := strings.SplitN(c.Input, " ", 2)
 			if len(command) != 2 {
-				a.logger.Error("alias or glob required")
-				continue
+				return "", repl.NewError("alias or glob required")
 			}
 
-			err = a.handleSend(command[1])
+			err := a.handleSend(command[1])
 			if err != nil {
-				a.logger.Error(err.Error())
-				continue
+				return "", repl.NewError(err.Error())
 			}
 
-		case "list":
-			err = a.handleList()
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if c.Input != "list" {
+				return "", repl.ErrNoMatch
+			}
+
+			err := a.handleList()
 			if err != nil {
-				a.logger.Error(err.Error())
+				return "", repl.NewError(err.Error())
 			}
 
-		case "new":
-			err = a.handleNew()
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if c.Input != "new" {
+				return "", repl.ErrNoMatch
+			}
+
+			err := a.handleNew()
 			if err != nil {
-				a.logger.Error(err.Error())
-				continue
+				return "", repl.NewError(err.Error())
 			}
 
-		case "env":
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if c.Input != "env" {
+				return "", repl.ErrNoMatch
+			}
+
 			for k, v := range a.config.Environments[a.env] {
 				fmt.Fprintf(a.writer, "%s = %s\n", k, v)
 			}
 
-		case "env-select":
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if c.Input != "help" && c.Input != "h" {
+				return "", repl.ErrNoMatch
+			}
+
+			a.printHelp()
+
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if !strings.HasPrefix(c.Input, "env-select") {
+				return "", repl.ErrNoMatch
+			}
+
+			command := strings.SplitN(c.Input, " ", 2)
 			if len(command) != 2 {
-				a.logger.Error("new env required")
-				continue
+				return "", repl.NewError("new env required")
 			}
 
 			newEnv := strings.TrimSpace(command[1])
 			if _, ok := a.config.Environments[newEnv]; !ok {
-				a.logger.Error("env does not exist (create with env-new)")
-				continue
+				return "", repl.NewError("env does not exist (create with env-new)")
 			}
 
 			a.env = newEnv
 
-		case "env-new":
-			if len(command) != 2 {
-				a.logger.Error("new env required")
-				continue
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if !strings.HasPrefix(c.Input, "env-new") {
+				return "", repl.ErrNoMatch
 			}
 
-			err = a.config.NewEnv(command[1])
+			command := strings.SplitN(c.Input, " ", 2)
+			if len(command) != 2 {
+				return "", repl.NewError("new env required")
+			}
+
+			err := a.config.NewEnv(command[1])
 			if err != nil {
-				a.logger.Error(err.Error())
-				continue
+				return "", repl.NewError(err.Error())
 			}
 
 			a.env = command[1]
 
-		case "env-set":
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if !strings.HasPrefix(c.Input, "env-set") {
+				return "", repl.ErrNoMatch
+			}
+
+			command := strings.SplitN(c.Input, " ", 2)
 			if len(command) != 2 {
-				a.logger.Error("key and value required")
-				continue
+				return "", repl.NewError("key and value required")
 			}
 
 			keyValue := strings.SplitN(command[1], " ", 2)
 			if len(keyValue) != 2 {
-				a.logger.Error("key and value required")
-				continue
+				return "", repl.NewError("key and value required")
 			}
 
-			err = a.config.SetEnvValue(a.env, keyValue[0], keyValue[1])
+			err := a.config.SetEnvValue(a.env, keyValue[0], keyValue[1])
 			if err != nil {
-				a.logger.Error(err.Error())
-				continue
+				return "", repl.NewError(err.Error())
 			}
 
-		case "env-delete":
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if !strings.HasPrefix(c.Input, "env-delete") {
+				return "", repl.ErrNoMatch
+			}
+
+			command := strings.SplitN(c.Input, " ", 2)
 			if len(command) != 2 {
-				a.logger.Error("key required")
-				continue
+				return "", repl.NewError("key required")
 			}
 
-			err = a.config.DeleteEnvValue(a.env, command[1])
+			err := a.config.DeleteEnvValue(a.env, command[1])
 			if err != nil {
-				a.logger.Error(err.Error())
-				continue
+				return "", repl.NewError(err.Error())
 			}
 
-		case "help", "h":
-			a.printHelp()
+			return "", nil
+		}).
+		WithHandler(func(c *repl.Context) (string, error) {
+			if c.Input != "quit" && c.Input != "q" && c.Input != "exit" {
+				return "", repl.ErrNoMatch
+			}
 
-		case "quit", "q", "exit":
-			return nil
-		}
+			return "", repl.ErrExit
+		})
+
+	return r.Run()
+}
+
+func (a *App) prompt(ctx *repl.Context) (string, error) {
+	prompt := ">> "
+	if a.env != "" {
+		prompt = fmt.Sprintf("[%s] >> ", a.env)
 	}
+
+	return prompt, nil
 }
 
 func (a *App) handleSendCommand(c *cli.Context) error {
-	a.logger.Debug("RUNNING DEBUG")
 	if c.Args().Len() == 0 {
 		a.logger.Error("alias or glob required")
 		return nil
