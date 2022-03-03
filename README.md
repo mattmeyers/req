@@ -1,10 +1,10 @@
-# req
+# reql
 
-`req` is a command line HTTP request runner that uses HCL for request definitions and provides a REPL for easy usage.
+`reql` is a command line HTTP request runner that uses HCL for request definitions and provides a REPL for easy usage.
 
 ## Installation
 
-`req` can be directly installed with the following command
+`reql` can be directly installed with the following command
 
 ```sh
 go install github.com/mattmeyers/req/cmd/req@latest

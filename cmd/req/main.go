@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mattmeyers/req/cli"
+	"github.com/mattmeyers/reql/cli"
 )
 
 func main() {

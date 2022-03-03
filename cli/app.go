@@ -11,17 +11,17 @@ import (
 	"strings"
 
 	"github.com/mattmeyers/repl"
-	"github.com/mattmeyers/req"
+	"github.com/mattmeyers/reql"
 	"github.com/urfave/cli/v2"
 )
 
 type App struct {
 	reader *bufio.Reader
 	writer io.Writer
-	logger req.Logger
+	logger reql.Logger
 
 	args   []string
-	config *req.Config
+	config *reql.Config
 	env    string
 	app    *cli.App
 }
@@ -34,14 +34,14 @@ func New(args []string) *App {
 	}
 
 	a.app = &cli.App{
-		Name:  "req",
+		Name:  "reql",
 		Usage: "A CLI/REPL HTTP request runner",
 		Flags: []cli.Flag{
 			&cli.PathFlag{
 				Name:      "config",
 				Aliases:   []string{"c"},
-				Usage:     "Point to a reqrc config file",
-				Value:     "./.reqrc",
+				Usage:     "Point to a reqlrc config file",
+				Value:     "./.reqlrc",
 				TakesFile: true,
 			},
 			&cli.BoolFlag{
@@ -58,22 +58,22 @@ func New(args []string) *App {
 		Before: func(c *cli.Context) error {
 			var err error
 
-			reqrcPath := c.Path("config")
-			a.config, err = req.ParseConfig(reqrcPath)
+			reqlrcPath := c.Path("config")
+			a.config, err = reql.ParseConfig(reqlrcPath)
 			if err != nil {
 				return err
 			}
 
 			a.env = a.config.DefaultEnv
 
-			level := req.LevelWarn
+			level := reql.LevelWarn
 			if c.Bool("verbose") {
-				level = req.LevelInfo
+				level = reql.LevelInfo
 			} else if c.Bool("very-verbose") {
-				level = req.LevelDebug
+				level = reql.LevelDebug
 			}
 
-			a.logger, err = req.NewLevelLogger(level, os.Stdout)
+			a.logger, err = reql.NewLevelLogger(level, os.Stdout)
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func (a *App) handleReplCommand(c *cli.Context) error {
 	r := repl.New().
 		WithPrompt(a.prompt).
 		WithPreRunHook(func(c *repl.Context) (string, error) {
-			return "Welcome to the req REPL.\nType help to see available commands.\n\n", nil
+			return "Welcome to the reql REPL.\nType help to see available commands.\n\n", nil
 		}).
 		WithHandler(func(c *repl.Context) (string, error) {
 			if !strings.HasPrefix(c.Input, "send") {
@@ -355,8 +355,8 @@ func (a *App) handleNew() error {
 		return err
 	}
 
-	client := req.NewClient()
-	_, res, err := client.Do(req.Request{Method: method, URL: url})
+	client := reql.NewClient()
+	_, res, err := client.Do(reql.Request{Method: method, URL: url})
 	if err != nil {
 		return err
 	}
@@ -399,12 +399,12 @@ func (a *App) getFiles(path string) ([]string, error) {
 func (a *App) sendRequests(files []string) error {
 	for _, file := range files {
 		a.logger.Info("Running %s...\n", file)
-		reqfile, err := req.ParseReqfile(file, a.config.Environments[a.env])
+		reqfile, err := reql.ParseReqfile(file, a.config.Environments[a.env])
 		if err != nil {
 			return err
 		}
 
-		client := req.NewClient()
+		client := reql.NewClient()
 		_, response, err := client.Do(reqfile.Request)
 		if err != nil {
 			return err

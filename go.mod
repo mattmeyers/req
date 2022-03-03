@@ -1,4 +1,4 @@
-module github.com/mattmeyers/req
+module github.com/mattmeyers/reql
 
 go 1.17
 
